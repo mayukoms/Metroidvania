@@ -12,7 +12,7 @@ public:
 
 private: 
 	void eventLoop();
-	void update();
+	void update(int elapsed_time);
 	void draw(Graphics&);
 	bool isRunning;
 };

@@ -1,7 +1,7 @@
 #include "game.h"
 #include <SDL.h>
-#include "Sprite.h"
 #include "Graphics.h"
+#include "input.h"
 
 namespace{
 	const int kFps = 60;
@@ -15,19 +15,22 @@ Game::Game(){
 	eventLoop();
 }
 
+#include "Player.h"
+Player* p;
+
 Game::~Game(){
 	SDL_Quit();
+	delete p;
 }
-
-Sprite* s;
 
 void Game::eventLoop(){
 	Graphics g;
+	Input input;
 
 	Uint32 timeOfLastStateSwitch = SDL_GetTicks();
 	Uint32 timeOfLastFrame = SDL_GetTicks();
 	
-	s = new Sprite("res/tommy.bmp", 0, 0, 32, 32);
+	p = new Player(g.LoadTexture("res/tommy.bmp"), 320, 240);
 
 	while (isRunning){
 
@@ -39,27 +42,44 @@ void Game::eventLoop(){
 		if (frameDeltaTime < 1000 / kFps){
 			continue;
 		}
+
+		// handle all the events
+		input.beginNewframe();
+		SDL_Event e;
+		while (SDL_PollEvent(&e))
+		{
+			// if the window is being requested to close, then stop the game.
+			if (e.type == SDL_QUIT) {
+				isRunning = false;
+			}
+			switch (e.type){
+				case SDL_KEYDOWN:
+					input.keyDownEvent(e);
+					break;
+				case SDL_KEYUP:
+					input.keyUpEvent(e);
+					break;
+				default:
+					break;
+			}
+		}
+
+		p->movePlayer(input);
+
+		Uint32 elapsed_time = timeOfThisFrame - timeOfLastFrame;
 		timeOfLastFrame = timeOfThisFrame;
 
-		update();
+		update(elapsed_time);
 		draw(g);
 	}
 }
 
-void Game::update(){
-	// handle all the events
-	SDL_Event e;
-	while (SDL_PollEvent(&e))
-	{
-		// if the window is being requested to close, then stop the game.
-		if (e.type == SDL_QUIT) {
-			isRunning = false;
-		}
-
-	}
+void Game::update(int elapsed_time){
+	p->update(elapsed_time);
 }
 
 void Game::draw(Graphics& g){
-	s->draw(g, 320, 240);
+	g.clear();
+	p->draw(g, p->x_pos_, p->y_pos_);
 	g.flipDisplay();
 }
